@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@3.5.2/dist/vue-router.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .form-input {
+      margin: 10px 0;
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .release-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    .release-list li {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <router-view></router-view>
+  </div>
+
+  <script>
+    const Home = { template: `<div><h1>Welcome to Release Management</h1><p><router-link to="/releases">Go to Releases</router-link></p></div>` };
+
+    const ReleaseList = {
+      template: `
+     <div>
+      <h1>Releases</h1>
+      <ul class="release-list">
+        <li v-for="release in releases" :key="release.id">
+          <div>
+            <p>ID: {{ release.id }}</p>
+            <p>Importance of Business Processes: {{ release.importance_of_business_processes }}</p>
+            <p>Technical Complexity: {{ release.technical_complexity }}</p>
+            <p>Team Experience: {{ release.team_experience }}</p>
+            <p>Level of Integration with Other Systems: {{ release.level_of_integration_with_other_systems }}</p>
+            <p>Reaction to Mistakes: {{ release.reaction_to_mistakes }}</p>
+            <p>Criticality of Streams: {{ release.criticality_of_streams }}</p>
+            <button @click="selectRelease(release)">Select</button>
+          </div>
+        </li>
+      </ul>
+      <button @click="addRelease">Add Release</button>
+     </div>
+      `,
+      data() {
+        return { releases: [] };
+      },
+      methods: {
+        fetchReleases() {
+          fetch('http://localhost:5000/get-releases')
+            .then(response => response.json())
+            .then(data => {
+              this.releases = data;
+            })
+            .catch(error => console.error('Error fetching releases:', error));
+        },
+        addRelease() {
+          this.$router.push({ name: 'add-release' });
+        },
+        selectRelease(release) {
+          this.$router.push({ name: 'predict-risk', params: { releaseId: release.id } });
+        }
+      },
+      mounted() {
+        this.fetchReleases();
+      }
+    };
+
+    // Компонент для добавления релиза
+    const ReleaseForm = {
+      template: `
+        <div>
+          <h1>Add Release</h1>
+          <form @submit.prevent="submitForm">
+            <input v-model="release.importance_of_business_processes" class="form-input" placeholder="Importance of Business Processes" type="number" />
+            <input v-model="release.technical_complexity" class="form-input" placeholder="Technical Complexity" type="number" />
+            <input v-model="release.team_experience" class="form-input" placeholder="Team Experience" type="number" />
+            <input v-model="release.level_of_integration_with_other_systems" class="form-input" placeholder="Level of Integration with Other Systems" type="number" />
+            <input v-model="release.reaction_to_mistakes" class="form-input" placeholder="Reaction to Mistakes" type="number" />
+            <input v-model="release.criticality_of_streams" class="form-input" placeholder="Criticality of Streams" type="number" />
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+      `,
+      data() {
+        return {
+          release: {
+            importance_of_business_processes: '',
+            technical_complexity: '',
+            team_experience: '',
+            level_of_integration_with_other_systems: '',
+            reaction_to_mistakes: '',
+            criticality_of_streams: ''
+          }
+        };
+      },
+      methods: {
+        submitForm() {
+          // Отправка данных на сервер
+          fetch('http://localhost:5000/add-release', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(this.release)
+          })
+          .then(response => response.json())
+          .then(data => {
+            alert('Release added successfully!');
+            this.$router.push('/releases'); // Перенаправление на страницу списка релизов
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding release');
+          });
+        }
+      }
+    };
+
+    const PredictRisk = {
+      template: `
+        <div>
+          <h1>Predict Risk for Release ID: {{ releaseId }}</h1>
+          <button @click="predictRisk">Calculate Risk</button>
+          <div v-if="risk !== null">
+            <h3>Risk Prediction: {{ risk }}</h3>
+          </div>
+        </div>
+      `,
+      data() {
+        return {
+          releaseId: this.$route.params.releaseId,
+          risk: null,
+          releaseData: null
+        };
+      },
+      methods: {
+        fetchReleaseData() {
+          fetch(`http://localhost:5000/get-releases`)
+            .then(response => response.json())
+            .then(data => {
+              this.releaseData = data.find(release => release.id == this.releaseId);
+            })
+            .catch(error => console.error('Error fetching release data:', error));
+        },
+        predictRisk() {
+          if (this.releaseData) {
+            fetch('http://localhost:5000/predict-risk', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.releaseData)
+            })
+            .then(response => response.json())
+            .then(data => {
+              this.risk = data.result;
+            })
+            .catch(error => console.error('Error predicting risk:', error));
+          }
+        }
+      },
+      mounted() {
+        this.fetchReleaseData();
+      }
+    };
+
+    const router = new VueRouter({
+      mode: 'hash',
+      routes: [
+        { path: '/', component: Home },
+        { path: '/releases', component: ReleaseList },
+        //{ path: '/add-release', component: ReleaseForm },
+        { path: '/add-release', component: ReleaseForm, name: 'add-release' },
+        { path: '/predict-risk/:releaseId', component: PredictRisk, name: 'predict-risk' }
+      ]
+    });
+
+    new Vue({
+      router,
+      el: '#app',
+      mounted() {
+        console.log("Vue app mounted");
+      }
+    });
+  </script>
+</body>
+</html>

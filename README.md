@@ -27,7 +27,7 @@
 2. Установите / активируйте виртуальное окружение
     ```bash
     python3 -m venv venv
-    source bin/activate
+    source venv/bin/activate
     ```
 3. Установите необходимые зависимости:
     ```bash

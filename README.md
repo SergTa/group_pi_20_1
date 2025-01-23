@@ -24,15 +24,20 @@
    ```bash
    git clone https://github.com/ChristopherMcCandless/group_pi_20.git
    ```
-2. Установите необходимые зависимости:
+2. Установите / активируйте виртуальное окружение
+    ```bash
+    python3 -m venv venv
+    source bin/activate
+    ```
+3. Установите необходимые зависимости:
     ```bash
     pip install -r requirements.txt
     ```
-3. Запустите сервер:
+4. Запустите сервер:
     ```bash
     python src/web/main.py
     ```
-4. Откройте файл `src/web/index.html` с помощью браузера
+5. Откройте файл `src/web/index.html` с помощью браузера
 
 
 ## Использование
